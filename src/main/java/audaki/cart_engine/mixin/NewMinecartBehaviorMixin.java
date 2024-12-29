@@ -1,5 +1,6 @@
 package audaki.cart_engine.mixin;
 
+import audaki.cart_engine.AceBlockTags;
 import audaki.cart_engine.AceGameRules;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -31,11 +32,22 @@ public abstract class NewMinecartBehaviorMixin extends MinecartBehavior {
             return;
         }
 
+        if (level.getBlockState(minecart.getCurrentBlockPosOrRailBelow()).is(AceBlockTags.SLOW_RAIL)) {
+            return;
+        }
+
         IntConsumer setSpeed = (speed) -> {
             if (speed == 0) {
                 return;
             }
-            cir.setReturnValue(speed * (this.minecart.isInWater() ? 0.5 : 1.0) / 20.0);
+
+            double bonus = 1;
+            if (level.getBlockState(minecart.getCurrentBlockPosOrRailBelow()).is(AceBlockTags.BONUS_SPEED_RAIL)) {
+                double ruleBonus = level.getGameRules().getRule(AceGameRules.MINECART_BONUS_SPEED_RAIL_MULTIPLIER).get();
+                if (ruleBonus > 0.0) bonus = ruleBonus;
+            }
+
+            cir.setReturnValue(speed * bonus * (this.minecart.isInWater() ? 0.5 : 1.0) / 20.0);
             cir.cancel();
         };
 
